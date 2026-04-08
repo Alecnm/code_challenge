@@ -1,58 +1,75 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# PHP / Laravel Coding Challenges
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Three self-contained Laravel implementations covering a dynamic rule engine, a flexible Eloquent filter, and a lightweight state machine trait. All tests run against an in-memory SQLite database — no external services required.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Challenge Map
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 1. Dynamic Rule Engine
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Evaluates whether a user object satisfies a JSON-defined rule set.
 
-## Learning Laravel
+| Layer | File |
+|---|---|
+| Core logic | `app/RuleEvaluator.php` |
+| Exceptions | `app/Exceptions/RuleEvaluator/` |
+| Tests | `tests/Unit/RuleEvaluatorTest.php` |
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+`RuleEvaluator::can(object $user, array $ruleSet): bool` accepts any object and a rule set array. Supported operators: `==`, `!=`, `>`, `<`, `in`, `not_in`, `contains`.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### 2. Nested Eloquent Search Filter
 
-## Agentic Development
+Applies a flat dot-notation filter payload across Eloquent relationships.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+| Layer | File |
+|---|---|
+| Core logic | `app/JsonQueryFilter.php` |
+| Tests | `tests/Feature/JsonQueryFilterTest.php` |
+
+`JsonQueryFilter::apply(Builder $query, array $filters): Builder` maps `relation.column` keys to `whereHas` / `orWhereHas` calls, and falls back to a plain `where` when the key matches the root model table name.
+
+---
+
+### 3. State Machine Trait
+
+A `HasStateMachine` trait that enforces allowed transitions on any Eloquent model.
+
+| Layer | File |
+|---|---|
+| Trait | `app/Models/Concerns/HasStateMachine.php` |
+| Events | `app/Events/ModelTransitioning.php`, `app/Events/ModelTransitioned.php` |
+| Exceptions | `app/Exceptions/StateMachine/` |
+| Tests | `tests/Feature/HasStateMachineTest.php` |
+
+Models declare a static `$states` map; calling `transitionTo(string $state)` validates the transition and dispatches the before/after events.
+
+---
+
+## Running the Tests
+
+### Locally (PHP 8.3 + Composer required)
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+php artisan test
+# or directly via PHPUnit:
+vendor/bin/phpunit
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### With Docker
 
-## Contributing
+```bash
+# Build and start the container (first time)
+docker compose up -d --build
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# Run all tests
+docker compose exec app php artisan test
 
-## Code of Conduct
+# Tear down when done
+docker compose down
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+> The SQLite in-memory driver is pre-configured in `phpunit.xml`, so no database setup is needed.
